@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>A Notes App</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+    <script type="text/babel">
+        const parseJSON=(xhr,content,viewForm)=>{
+            if(xhr.response&&xhr.getResponseHeader('Content-Type')==='application/json'){
+                const obj=JSON.parse(xhr.response);
+                console.dir(obj);
+                
+                if(obj.message){
+                    content.innerHTML+=`<p>Message: ${obj.message}</p>`;
+                } else if(obj.title&&obj.content){
+                    viewForm.querySelector('#titleField').value=obj.title;
+                    viewForm.querySelector('#noteField').value=obj.content;
+                }
+            }
+        };
+        
+        const handleResponse = (xhr, parseResponse) => {
+            const content = document.querySelector('#content');
+            const viewForm=document.querySelector('#viewForm')
+            
+            switch(xhr.status){
+                case 200:
+                    content.innerHTML='<b>Your note was successfully retrieved!</b>';
+                    break;
+                case 201:
+                    content.innerHTML='<b>Your note was successfully created!</b>';
+                    break;
+                case 204:
+                    content.innerHTML='<b>Your note was successfully updated!</b>';
+                    break;
+                case 400:
+                    content.innerHTML='<b>Error 400: Bad Request</b>';
+                    break;
+                case 404:
+                    content.innerHTML='<b>Error 404: Resource Not Found</b>';
+                    break;
+                default:
+                    content.innerHTML='<b>Error: Status Code not Implemented</b>';
+                    break;
+            }
+            
+            if(parseResponse)parseJSON(xhr,content,viewForm);   
+        };
+
+        const requestUpdate = (e, retrieveForm) => {
+            const url = retrieveForm.getAttribute('action');
+            const method = retrieveForm.getAttribute('method');
+            const select=retrieveForm.querySelector('select');
+            
+            url+=`?title=${select.options[select.selectedIndex].value}`
+      
+            const xhr = new XMLHttpRequest();
+            xhr.open(method, url);
+            
+            xhr.setRequestHeader('Accept', 'application/json');
+            
+            if(method==='get'){
+                xhr.onload=()=>handleResponse(xhr, true);
+            } else {
+                xhr.onload=()=>handleResponse(xhr, false);
+            }
+            
+            xhr.send();
+            
+            e.preventDefault();
+            return false;
+        };
+
+        const sendPost=(e,noteForm)=>{
+            //we want to prevent the page from sending on its own
+            e.preventDefault();
+            
+            const noteAction=noteForm.getAttribute('action');
+            const noteMethod=noteForm.getAttribute('method');
+            
+            const titleField=noteForm.querySelector('#titleField');
+            const contentField=noteForm.querySelector('#noteField');
+            
+            const xhr=new XMLHttpRequest();
+            xhr.open(noteMethod, noteAction);
+            
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            
+            xhr.onload=()=>handleResponse(xhr,true);
+            
+            const formData=`title=${titleField.value}&content=${noteField.value}`;
+            xhr.send(formData);
+            
+            return false;
+        };
+
+        const init = () => {
+            const noteForm=document.querySelector('#noteForm');
+            const retrieveForm=document.querySelector('#retrieveForm');
+            const viewForm=document.querySelector('#viewForm');
+            
+            document.getElementById('#retrieve').style.visibility="hidden";
+            document.getElementById('#view').style.visibility="hidden";
+            
+            const newNote=(e)=>{
+                sendPost(e,noteForm);
+                document.getElementById('#retrieve').style.visibility="visible";
+                document.getElementById('#view').style.visibility="visible";
+                
+                const viewFormNoteField=viewForm.querySelector('#noteField');
+                const noteFormNoteField=noteForm.querySelector('#noteField');
+                const viewFormTitleField=viewForm.querySelector('#titleField');
+                const noteFormTitleField=noteForm.querySelector('#titleField');
+                
+                viewFormNoteField.value=noteFormNoteField.value;
+                viewFormTitleField.value=noteFormTitleField.value;
+                const option=document.createElement('option');
+                option.value=`${noteFormTitleField.value}`;
+                retrieveForm.getElementById('#noteSelect').appendChild(option);
+                noteFormNoteField.value='';
+                noteFormTitleField.value='';
+            };
+            
+            const getNote=(e)=>requestUpdate(e,retrieveForm);
+            
+            const editNote=(e)=>sendPost(e,viewForm);
+            
+            noteForm.addEventListener('submit', newNote);
+            retrieveForm.addEventListener('submit', getNote);
+            viewForm.addEventListener('submit',editNote);
+        };
+
+        window.onload = init;
+    </script>
+</head>
+<body>
+    <div id="top">
+        <h1>Notekeeper</h1>
+        <h3>A place to keep some notes.</h3>
+    </div>
+    <div id="main">
+        <section id="content"></section>
+        <div id="create">
+            <h3>Make a New Note!</h3>
+            <form id="noteForm" action="/addNote" method="post">
+                <label for="title">Give it a Title!</label>
+                <input id="titleField" type="text" name="title"/>
+                <label for="noteField">Write a Note!</label>
+                <textarea id="noteField" name="noteField" wrap="soft" placeholder="Write your note here." rows="10" cols="50"></textarea>
+                <input type="submit" value="Save Note" />
+            </form>
+        </div>
+        
+        <div id="retrieve">
+            <h3>Retrieve a Note!</h3>
+            <form id="retrieveForm" action="/getNote" method="get">
+                <label for="name">Note Name?</label>
+                <select id="noteSelect" name="name"></select>
+                <input type="submit" value="Retrieve Note" />
+            </form>
+        </div>
+        
+        <div id="view">
+            <h3>View or Edit a Note!</h3>
+            <form id="viewForm" action="/addNote" method="post">
+                <input id="titleField" type="text" readonly/>
+                <textarea id="noteField" name="noteField" wrap="soft" rows="10" cols="50">There's no note here!</textarea>
+                <input type="submit" value="Save Changes" />
+            </form>
+        </div>
+        
+    </div>
+    <footer>Made by J. Hernandez</footer>
+</body>
+</html>
