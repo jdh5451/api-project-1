@@ -32,9 +32,9 @@ const addNote = (request, response, body) => {
   if (!body.title || !body.content) {
     responseJSON.id = 'missingParams';
     return respondJSON(request, response, 400, responseJSON);
-  } else if(!body.user){
-    responseJSON.message='You are not logged in. Please log in again.';
-    responseJSON.id='unauthorized';
+  } if (!body.user) {
+    responseJSON.message = 'You are not logged in. Please log in again.';
+    responseJSON.id = 'unauthorized';
     return respondJSON(request, response, 401, responseJSON);
   }
   // assume user is creating a new note
@@ -66,49 +66,76 @@ const getNote = (request, response, params) => {
     message: 'The request was successful, but no note with that title was found.',
     id: 'notFound',
   };
-    
-  if(!params.user){
-    responseJSON.message='You are not logged in. Please log in again.';
-    responseJSON.id='unauthorized';
+
+  if (!params.user) {
+    responseJSON.message = 'You are not logged in. Please log in again.';
+    responseJSON.id = 'unauthorized';
     return respondJSON(request, response, 401, responseJSON);
   }
 
-  if (users[params.user].notes[params.title]) respondJSON(request, response, 200, users[params.user].notes[params.title]);
-  else respondJSON(request, response, 404, responseJSON);
+  if (users[params.user].notes[params.title]) {
+    return respondJSON(request, response, 200, users[params.user].notes[params.title]);
+  }
+  return respondJSON(request, response, 404, responseJSON);
 };
 
 // HEAD request for retrieving notes
 const getNoteMeta = (request, response, params) => {
-  if(!params.user) respondJSONMeta(request, response, 401);
-  else if (users[params.user].notes[params.title]) respondJSONMeta(request, response, 200);
-  else respondJSONMeta(request, response, 404);
+  if (!params.user) return respondJSONMeta(request, response, 401);
+  if (users[params.user].notes[params.title]) return respondJSONMeta(request, response, 200);
+  return respondJSONMeta(request, response, 404);
 };
 
-//GET request for retrieving user data
-const getUser = (request, response, params) => {
-//assume user has not provided both username and password
+// POST request for retrieving user data
+const logIn = (request, response, body) => {
+// assume user has not provided both username and password
   const responseJSON = {
     message: 'Both username and password are required.',
   };
-//check if user has provided both username and password. if they haven't, tell them to try again
-  if (!params.user||!params.pass){
+  // check if user has provided both username and password. if they haven't, tell them to try again
+  if (!body.username || !body.password) {
     responseJSON.id = 'missingParams';
     return respondJSON(request, response, 400, responseJSON);
-  } 
-//check if user has logged in with the password that matches their username. if password doesn't match, inform them of such.
-  else if(users[params.user] && !(users[params.user].pass===params.pass)){
-    responseJSON.message='Incorrect password. If you are attempting to make a new account, try a different username.';
-    responseJSON.id='wrongPassword';
+  }
+  // check if user has logged in with the password that matches their username.
+  if (users[body.username] && !(users[body.username].password === body.password)) {
+    responseJSON.message = 'Incorrect password. If you are attempting to make a new account, try a different username.';
+    responseJSON.id = 'wrongPassword';
     return respondJSON(request, response, 401, responseJSON);
   }
-    
-  
-};
 
-// HEAD request for retrieving user data
-const getUserMeta = (request, response, params) => {
-  if (notes[params.title]) respondJSONMeta(request, response, 200);
-  else respondJSONMeta(request, response, 404);
+  // assume user is creating a new account
+  let responseCode = 201;
+
+  // check for an existing user, create one if none found
+  if (users[body.username]) {
+    responseCode = 200;
+  } else {
+    users[body.username] = {};
+    users[body.username].name = body.username;
+    users[body.username].pass = body.password;
+    users[body.username].notes = {};
+  }
+
+  // send back 201
+  if (responseCode === 201) {
+    responseJSON.message = `Welcome, ${users[body.username].name}! Write your first note now!`;
+    return respondJSON(request, response, responseCode, responseJSON);
+  }
+
+  if (!users[body.username].notes) {
+    users[body.username].notes = {};
+    responseJSON.message = `Welcome back, ${users[body.username].name}! Write your first note now!`;
+    return respondJSON(request, response, responseCode, responseJSON);
+  }
+  if (Object.keys(users[body.username].notes).length === 0) {
+    responseJSON.message = `Welcome back, ${users[body.username].name}! Write your first note now!`;
+    return respondJSON(request, response, responseCode, responseJSON);
+  }
+
+  responseJSON.message = `Welcome back, ${users[body.username].name}!`;
+  responseJSON.titles = Object.keys(users[body.username].notes);
+  return respondJSON(request, response, responseCode, responseJSON);
 };
 
 // 404 get request
@@ -127,8 +154,7 @@ const notFoundMeta = (request, response) => respondJSONMeta(request, response, 4
 module.exports = {
   getNote,
   getNoteMeta,
-  getUser,
-  getUserMeta,
+  logIn,
   addNote,
   notFound,
   notFoundMeta,

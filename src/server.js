@@ -11,7 +11,6 @@ const urlStruct = {
     '/': htmlHandler.getIndex,
     '/style.css': htmlHandler.getStyle,
     '/getNote': responseHandler.getNote,
-    '/getUser': responseHandler.getUser,
     notFound: responseHandler.notFound,
   },
   HEAD: {
@@ -19,11 +18,15 @@ const urlStruct = {
     '/getUser': responseHandler.getUserMeta,
     notFound: responseHandler.notFoundMeta,
   },
+  POST: {
+    '/addNote': responseHandler.addNote,
+    '/logIn': responseHandler.logIn,
+  },
 };
 
 // handle a post request
 const handlePost = (request, response, parsedUrl) => {
-  if (parsedUrl.pathname === '/addNote') {
+  if (urlStruct[request.method][parsedUrl.pathname]) {
     const body = [];
 
     request.on('error', (err) => {
@@ -40,7 +43,7 @@ const handlePost = (request, response, parsedUrl) => {
       const bodyString = Buffer.concat(body).toString();
       const bodyParams = query.parse(bodyString);
 
-      responseHandler.addNote(request, response, bodyParams);
+      urlStruct[request.method][parsedUrl.pathname](request, response, bodyParams);
     });
   }
 };
@@ -51,9 +54,9 @@ const handleRequest = (request, response, parsedUrl) => {
   const params = query.parse(parsedUrl.query);
 
   if (urlStruct[request.method][parsedUrl.pathname]) {
-    urlStruct[request.method][parsedUrl.pathname](request, response,params);
+    urlStruct[request.method][parsedUrl.pathname](request, response, params);
   } else {
-    urlStruct[request.method].notFound(request, response,params);
+    urlStruct[request.method].notFound(request, response, params);
   }
 };
 

@@ -13,6 +13,14 @@
                 
                 if(obj.message){
                     content.innerHTML+=`<p>Message: ${obj.message}</p>`;
+                    if(obj.titles&&!(obj.titles.length===0)){
+                        for(let i=0;i<obj.titles.length;i++){
+                            let option=document.createElement('option');
+                            option.value=`${noteFormTitleField.value}`;
+                            option.text=`${noteFormTitleField.value}`;
+                            document.getElementById('noteSelect').appendChild(option);
+                        }
+                    }
                 } else if(obj.title&&obj.content){
                     viewForm.querySelector('#titleField').value=obj.title;
                     viewForm.querySelector('#noteField').value=obj.content;
@@ -22,7 +30,8 @@
         
         const handleResponse = (xhr, parseResponse, loggedIn) => {
             const content = document.querySelector('#content');
-            const viewForm=document.querySelector('#viewForm')
+            const viewForm=document.querySelector('#viewForm');
+            const retrieveForm=document.querySelector('#retrieveForm');
             
             switch(xhr.status){
                 case 200:
@@ -40,7 +49,6 @@
                         content.innerHTML='<b>You have successfully created your account!</b>';
                         document.getElementById('login').style.visibility="hidden";
                         document.getElementById('create').style.visibility="visible";
-                        document.getElementById('retrieve').style.visibility="visible";
                     }
                     break;
                 case 204:
@@ -51,12 +59,18 @@
                     break;
                 case 401:
                     if(loggedIn){
-                        content.innerHTML='<b>Error 401: Unauthorized</b>'
+                        content.innerHTML='<b>Error 401: Unauthorized</b>';
                         document.getElementById('login').style.visibility="visible";
                         document.getElementById('create').style.visibility="hidden";
                         document.getElementById('retrieve').style.visibility="hidden";
                         document.getElementById('view').style.visibility="hidden";
-                    } else content.innerHTML='<b>Error 401: Unauthorized</b>'
+                        document.getElementById('userField').value='';
+                        document.getElementById('passField').value='';
+                    } else {
+                        content.innerHTML='<b>Error 401: Unauthorized</b>';
+                        document.getElementById('userField').value='';
+                        document.getElementById('passField').value='';
+                    }
                     break;
                 case 404:
                     content.innerHTML='<b>Error 404: Resource Not Found</b>';
@@ -72,20 +86,11 @@
         const requestUpdate = (e, form) => {
             let url = retrieveForm.getAttribute('action');
             const method = retrieveForm.getAttribute('method');
-            let loggedIn=false;
-            
-            if(url==='/getUser'){
-                let user=form.querySelector('text').value;
-                let pass=form.querySelector('password').value;
-                url+=`?user=${user}&pass=${pass}`;
-            }
-            
-            else if(url==='/getNote'){
-                const select = retrieveForm.querySelector('select');
-                let user=form.querySelector('text').value;
-                url+=`?user=${user}&title=${select.options[select.selectedIndex].value}`;
-                loggedIn=true;
-            }
+                
+            const select = retrieveForm.querySelector('select');
+            let user=document.querySelector('#userField').value;
+            url+=`?user=${user}&title=${select.options[select.selectedIndex].value}`;
+   
             
             const xhr = new XMLHttpRequest();
             xhr.open(method, url);
@@ -93,9 +98,9 @@
             xhr.setRequestHeader('Accept', 'application/json');
             
             if(method==='get'){
-                xhr.onload=()=>handleResponse(xhr, true, loggedIn);
+                xhr.onload=()=>handleResponse(xhr, true, true);
             } else {
-                xhr.onload=()=>handleResponse(xhr, false, loggedIn);
+                xhr.onload=()=>handleResponse(xhr, false, true);
             }
             
             xhr.send();
@@ -104,27 +109,38 @@
             return false;
         };
 
-        const sendPost=(e,noteForm)=>{
+        const sendPost=(e,form)=>{
             //we want to prevent the page from sending on its own
             e.preventDefault();
             
-            const noteAction=noteForm.getAttribute('action');
-            const noteMethod=noteForm.getAttribute('method');
+            const action=form.getAttribute('action');
+            const method=form.getAttribute('method');
+            let formData='';
+            let loggedIn=false;
             
-            const titleField=noteForm.querySelector('#titleField');
-            const contentField=noteForm.querySelector('#noteField');
+            if(action==='/logIn'){
+                const user=form.querySelector('text');
+                const pass=form.querySelector('pass');
+                formData=`user=${user}&pass=${pass}`;
+            }
             
-            let user=form.querySelector('text').value;
+            else if(action==='/addNote'){
+                loggedIn=true;
+                const user=document.querySelector('#userField').value;
+                const titleField=form.querySelector('#titleField');
+                const contentField=form.querySelector('#noteField');
+                formData=`user=${user}&title=${titleField.value}&content=${noteField.value}`;
+            }
             
             const xhr=new XMLHttpRequest();
-            xhr.open(noteMethod, noteAction);
+            xhr.open(method, action);
             
             xhr.setRequestHeader('Accept', 'application/json');
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             
-            xhr.onload=()=>handleResponse(xhr,true, true);
+            xhr.onload=()=>handleResponse(xhr,true, loggedIn);
             
-            const formData=`user=${user}&title=${titleField.value}&content=${noteField.value}`;
+            
             xhr.send(formData);
             
             return false;
@@ -140,9 +156,7 @@
             document.getElementById('retrieve').style.visibility="hidden";
             document.getElementById('view').style.visibility="hidden";
             
-            const getUser=(e)=>{
-                requestUpdate(e,loginForm);
-            }
+            const logIn=(e)=>sendPost(e,loginForm);
             
             const newNote=(e)=>{
                 sendPost(e,noteForm);
@@ -186,7 +200,7 @@
             <h3>Please Log In!</h3>
             <p>If you haven't logged in before, logging in will create a new account.</p>
             <p>Please make sure to use a password that you don't use elsewhere!</p>
-            <form id="loginForm" action="/getUser" method="get">
+            <form id="loginForm" action="/logIn" method="post">
                 <label for="username">Username:</label>
                 <input id="userField" type="text" name="username"/>
                 <label for="password">Password:</label>
