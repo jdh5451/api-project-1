@@ -11,15 +11,17 @@ const urlStruct = {
     '/': htmlHandler.getIndex,
     '/style.css': htmlHandler.getStyle,
     '/getNote': responseHandler.getNote,
+    '/getUser': responseHandler.getUser,
     notFound: responseHandler.notFound,
   },
   HEAD: {
     '/getNote': responseHandler.getNoteMeta,
+    '/getUser': responseHandler.getUserMeta,
     notFound: responseHandler.notFoundMeta,
   },
 };
 
-//handle a post request
+// handle a post request
 const handlePost = (request, response, parsedUrl) => {
   if (parsedUrl.pathname === '/addNote') {
     const body = [];
@@ -46,11 +48,12 @@ const handlePost = (request, response, parsedUrl) => {
 const handleRequest = (request, response, parsedUrl) => {
   console.dir(parsedUrl.pathname);
   console.dir(request.method);
+  const params = query.parse(parsedUrl.query);
 
   if (urlStruct[request.method][parsedUrl.pathname]) {
-    urlStruct[request.method][parsedUrl.pathname](request, response);
+    urlStruct[request.method][parsedUrl.pathname](request, response,params);
   } else {
-    urlStruct[request.method].notFound(request, response);
+    urlStruct[request.method].notFound(request, response,params);
   }
 };
 

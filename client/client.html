@@ -16,26 +16,47 @@
                 } else if(obj.title&&obj.content){
                     viewForm.querySelector('#titleField').value=obj.title;
                     viewForm.querySelector('#noteField').value=obj.content;
-                }
+                } 
             }
         };
         
-        const handleResponse = (xhr, parseResponse) => {
+        const handleResponse = (xhr, parseResponse, loggedIn) => {
             const content = document.querySelector('#content');
             const viewForm=document.querySelector('#viewForm')
             
             switch(xhr.status){
                 case 200:
-                    content.innerHTML='<b>Your note was successfully retrieved!</b>';
+                    if(loggedIn) content.innerHTML='<b>Your note was successfully retrieved!</b>';
+                    else{
+                        content.innerHTML='<b>You have successfully logged in to your account!</b>';
+                        document.getElementById('login').style.visibility="hidden";
+                        document.getElementById('create').style.visibility="visible";
+                        document.getElementById('retrieve').style.visibility="visible";
+                    }
                     break;
                 case 201:
-                    content.innerHTML='<b>Your note was successfully created!</b>';
+                    if(loggedIn) content.innerHTML='<b>Your note was successfully created!</b>';
+                    else{
+                        content.innerHTML='<b>You have successfully created your account!</b>';
+                        document.getElementById('login').style.visibility="hidden";
+                        document.getElementById('create').style.visibility="visible";
+                        document.getElementById('retrieve').style.visibility="visible";
+                    }
                     break;
                 case 204:
                     content.innerHTML='<b>Your note was successfully updated!</b>';
                     break;
                 case 400:
                     content.innerHTML='<b>Error 400: Bad Request</b>';
+                    break;
+                case 401:
+                    if(loggedIn){
+                        content.innerHTML='<b>Error 401: Unauthorized</b>'
+                        document.getElementById('login').style.visibility="visible";
+                        document.getElementById('create').style.visibility="hidden";
+                        document.getElementById('retrieve').style.visibility="hidden";
+                        document.getElementById('view').style.visibility="hidden";
+                    } else content.innerHTML='<b>Error 401: Unauthorized</b>'
                     break;
                 case 404:
                     content.innerHTML='<b>Error 404: Resource Not Found</b>';
@@ -48,22 +69,33 @@
             if(parseResponse)parseJSON(xhr,content,viewForm);   
         };
 
-        const requestUpdate = (e, retrieveForm) => {
-            const url = retrieveForm.getAttribute('action');
+        const requestUpdate = (e, form) => {
+            let url = retrieveForm.getAttribute('action');
             const method = retrieveForm.getAttribute('method');
-            const select=retrieveForm.querySelector('select');
+            let loggedIn=false;
             
-            url+=`?title=${select.options[select.selectedIndex].value}`
-      
+            if(url==='/getUser'){
+                let user=form.querySelector('text').value;
+                let pass=form.querySelector('password').value;
+                url+=`?user=${user}&pass=${pass}`;
+            }
+            
+            else if(url==='/getNote'){
+                const select = retrieveForm.querySelector('select');
+                let user=form.querySelector('text').value;
+                url+=`?user=${user}&title=${select.options[select.selectedIndex].value}`;
+                loggedIn=true;
+            }
+            
             const xhr = new XMLHttpRequest();
             xhr.open(method, url);
             
             xhr.setRequestHeader('Accept', 'application/json');
             
             if(method==='get'){
-                xhr.onload=()=>handleResponse(xhr, true);
+                xhr.onload=()=>handleResponse(xhr, true, loggedIn);
             } else {
-                xhr.onload=()=>handleResponse(xhr, false);
+                xhr.onload=()=>handleResponse(xhr, false, loggedIn);
             }
             
             xhr.send();
@@ -82,32 +114,39 @@
             const titleField=noteForm.querySelector('#titleField');
             const contentField=noteForm.querySelector('#noteField');
             
+            let user=form.querySelector('text').value;
+            
             const xhr=new XMLHttpRequest();
             xhr.open(noteMethod, noteAction);
             
             xhr.setRequestHeader('Accept', 'application/json');
             xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             
-            xhr.onload=()=>handleResponse(xhr,true);
+            xhr.onload=()=>handleResponse(xhr,true, true);
             
-            const formData=`title=${titleField.value}&content=${noteField.value}`;
+            const formData=`user=${user}&title=${titleField.value}&content=${noteField.value}`;
             xhr.send(formData);
             
             return false;
         };
 
         const init = () => {
+            const loginForm=document.querySelector('#loginForm');
             const noteForm=document.querySelector('#noteForm');
             const retrieveForm=document.querySelector('#retrieveForm');
             const viewForm=document.querySelector('#viewForm');
             
-            document.getElementById('#retrieve').style.visibility="hidden";
-            document.getElementById('#view').style.visibility="hidden";
+            document.getElementById('create').style.visibility="hidden";
+            document.getElementById('retrieve').style.visibility="hidden";
+            document.getElementById('view').style.visibility="hidden";
+            
+            const getUser=(e)=>{
+                requestUpdate(e,loginForm);
+            }
             
             const newNote=(e)=>{
                 sendPost(e,noteForm);
-                document.getElementById('#retrieve').style.visibility="visible";
-                document.getElementById('#view').style.visibility="visible";
+                document.getElementById('view').style.visibility="visible";
                 
                 const viewFormNoteField=viewForm.querySelector('#noteField');
                 const noteFormNoteField=noteForm.querySelector('#noteField');
@@ -116,9 +155,10 @@
                 
                 viewFormNoteField.value=noteFormNoteField.value;
                 viewFormTitleField.value=noteFormTitleField.value;
-                const option=document.createElement('option');
+                let option=document.createElement('option');
                 option.value=`${noteFormTitleField.value}`;
-                retrieveForm.getElementById('#noteSelect').appendChild(option);
+                option.text=`${noteFormTitleField.value}`;
+                document.getElementById('noteSelect').appendChild(option);
                 noteFormNoteField.value='';
                 noteFormTitleField.value='';
             };
@@ -142,8 +182,21 @@
     </div>
     <div id="main">
         <section id="content"></section>
+        <div id="login">
+            <h3>Please Log In!</h3>
+            <p>If you haven't logged in before, logging in will create a new account.</p>
+            <p>Please make sure to use a password that you don't use elsewhere!</p>
+            <form id="loginForm" action="/getUser" method="get">
+                <label for="username">Username:</label>
+                <input id="userField" type="text" name="username"/>
+                <label for="password">Password:</label>
+                <input id="passField" name="password" type='password'/>
+                <input type="submit" value="login" />
+            </form>
+        </div>
         <div id="create">
             <h3>Make a New Note!</h3>
+            <p>(We don't recommend putting super important, secret, personal data in these notes right now.)</p>
             <form id="noteForm" action="/addNote" method="post">
                 <label for="title">Give it a Title!</label>
                 <input id="titleField" type="text" name="title"/>
