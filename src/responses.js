@@ -93,12 +93,12 @@ const logIn = (request, response, body) => {
     message: 'Both username and password are required.',
   };
   // check if user has provided both username and password. if they haven't, tell them to try again
-  if (!body.username || !body.password) {
+  if (!body.user || !body.pass) {
     responseJSON.id = 'missingParams';
     return respondJSON(request, response, 400, responseJSON);
   }
   // check if user has logged in with the password that matches their username.
-  if (users[body.username] && !(users[body.username].password === body.password)) {
+  if (users[body.user] && !(users[body.user].pass === body.pass)) {
     responseJSON.message = 'Incorrect password. If you are attempting to make a new account, try a different username.';
     responseJSON.id = 'wrongPassword';
     return respondJSON(request, response, 401, responseJSON);
@@ -108,33 +108,33 @@ const logIn = (request, response, body) => {
   let responseCode = 201;
 
   // check for an existing user, create one if none found
-  if (users[body.username]) {
+  if (users[body.user]) {
     responseCode = 200;
   } else {
-    users[body.username] = {};
-    users[body.username].name = body.username;
-    users[body.username].pass = body.password;
-    users[body.username].notes = {};
+    users[body.user] = {};
+    users[body.user].name = body.user;
+    users[body.user].pass = body.pass;
+    users[body.user].notes = {};
   }
 
   // send back 201
   if (responseCode === 201) {
-    responseJSON.message = `Welcome, ${users[body.username].name}! Write your first note now!`;
+    responseJSON.message = `Welcome, ${users[body.user].name}! Write your first note now!`;
     return respondJSON(request, response, responseCode, responseJSON);
   }
 
-  if (!users[body.username].notes) {
-    users[body.username].notes = {};
-    responseJSON.message = `Welcome back, ${users[body.username].name}! Write your first note now!`;
+  if (!users[body.user].notes) {
+    users[body.user].notes = {};
+    responseJSON.message = `Welcome back, ${users[body.user].name}! Write your first note now!`;
     return respondJSON(request, response, responseCode, responseJSON);
   }
-  if (Object.keys(users[body.username].notes).length === 0) {
-    responseJSON.message = `Welcome back, ${users[body.username].name}! Write your first note now!`;
+  if (Object.keys(users[body.user].notes).length === 0) {
+    responseJSON.message = `Welcome back, ${users[body.user].name}! Write your first note now!`;
     return respondJSON(request, response, responseCode, responseJSON);
   }
 
-  responseJSON.message = `Welcome back, ${users[body.username].name}!`;
-  responseJSON.titles = Object.keys(users[body.username].notes);
+  responseJSON.message = `Welcome back, ${users[body.user].name}!`;
+  responseJSON.titles = Object.keys(users[body.user].notes);
   return respondJSON(request, response, responseCode, responseJSON);
 };
 

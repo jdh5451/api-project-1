@@ -12,14 +12,19 @@
                 console.dir(obj);
                 
                 if(obj.message){
-                    content.innerHTML+=`<p>Message: ${obj.message}</p>`;
-                    if(obj.titles&&!(obj.titles.length===0)){
-                        for(let i=0;i<obj.titles.length;i++){
-                            let option=document.createElement('option');
-                            option.value=`${noteFormTitleField.value}`;
-                            option.text=`${noteFormTitleField.value}`;
-                            document.getElementById('noteSelect').appendChild(option);
+                    content.innerHTML+=`<p>${obj.message}</p>`;
+                    if(obj.titles){
+                        {
+                            if(!(obj.titles.length===0)){
+                                for(let i=0;i<obj.titles.length;i++){
+                                    let option=document.createElement('option');
+                                    option.value=`${obj.titles[i]}`;
+                                    option.text=`${obj.titles[i]}`;
+                                    document.getElementById('noteSelect').appendChild(option);
+                                }
+                            }
                         }
+                        
                     }
                 } else if(obj.title&&obj.content){
                     viewForm.querySelector('#titleField').value=obj.title;
@@ -33,32 +38,21 @@
             const viewForm=document.querySelector('#viewForm');
             const retrieveForm=document.querySelector('#retrieveForm');
             
-            switch(xhr.status){
-                case 200:
-                    if(loggedIn) content.innerHTML='<b>Your note was successfully retrieved!</b>';
-                    else{
-                        content.innerHTML='<b>You have successfully logged in to your account!</b>';
-                        document.getElementById('login').style.visibility="hidden";
-                        document.getElementById('create').style.visibility="visible";
-                        document.getElementById('retrieve').style.visibility="visible";
-                    }
-                    break;
-                case 201:
-                    if(loggedIn) content.innerHTML='<b>Your note was successfully created!</b>';
-                    else{
-                        content.innerHTML='<b>You have successfully created your account!</b>';
-                        document.getElementById('login').style.visibility="hidden";
-                        document.getElementById('create').style.visibility="visible";
-                    }
-                    break;
-                case 204:
-                    content.innerHTML='<b>Your note was successfully updated!</b>';
-                    break;
-                case 400:
-                    content.innerHTML='<b>Error 400: Bad Request</b>';
-                    break;
-                case 401:
-                    if(loggedIn){
+            if(loggedIn){
+                switch(xhr.status){
+                    case 200:
+                        content.innerHTML='<b>Your note was successfully retrieved!</b>';
+                        break;
+                    case 201:
+                        content.innerHTML='<b>Your note was successfully created!</b>';
+                        break;
+                    case 204:
+                        content.innerHTML='<b>Your note was successfully updated!</b>';
+                        break;
+                    case 400:
+                        content.innerHTML='<b>Error 400: Bad Request</b>';
+                        break;
+                    case 401:
                         content.innerHTML='<b>Error 401: Unauthorized</b>';
                         document.getElementById('login').style.visibility="visible";
                         document.getElementById('create').style.visibility="hidden";
@@ -66,24 +60,55 @@
                         document.getElementById('view').style.visibility="hidden";
                         document.getElementById('userField').value='';
                         document.getElementById('passField').value='';
-                    } else {
+                        break;
+                    case 404:
+                        content.innerHTML='<b>Error 404: Resource Not Found</b>';
+                        break;
+                    default:
+                        content.innerHTML='<b>Error: Status Code not Implemented</b>';
+                        break;
+                }
+            }
+            
+            else{
+                switch(xhr.status){
+                    case 200:
+                        content.innerHTML='<b>You have successfully logged in to your account!</b>';
+                        document.getElementById('login').style.visibility="hidden";
+                        document.getElementById('create').style.visibility="visible";
+                        document.getElementById('retrieve').style.visibility="visible";
+                        break;
+                    case 201:
+                        content.innerHTML='<b>You have successfully created your account!</b>';
+                        document.getElementById('login').style.visibility="hidden";
+                        document.getElementById('create').style.visibility="visible";
+                        break;
+                    case 204:
+                        content.innerHTML='<b>Your note was successfully updated!</b>';
+                        break;
+                    case 400:
+                        content.innerHTML='<b>Error 400: Bad Request</b>';
+                        break;
+                    case 401:
                         content.innerHTML='<b>Error 401: Unauthorized</b>';
                         document.getElementById('userField').value='';
                         document.getElementById('passField').value='';
-                    }
-                    break;
-                case 404:
-                    content.innerHTML='<b>Error 404: Resource Not Found</b>';
-                    break;
-                default:
-                    content.innerHTML='<b>Error: Status Code not Implemented</b>';
-                    break;
+                        break;
+                    case 404:
+                        content.innerHTML='<b>Error 404: Resource Not Found</b>';
+                        break;
+                    default:
+                        content.innerHTML='<b>Error: Status Code not Implemented</b>';
+                        break;
+                }
             }
             
-            if(parseResponse)parseJSON(xhr,content,viewForm);   
+
+            
+            parseJSON(xhr,content,viewForm);   
         };
 
-        const requestUpdate = (e, form) => {
+        const requestUpdate = (e, retrieveForm) => {
             let url = retrieveForm.getAttribute('action');
             const method = retrieveForm.getAttribute('method');
                 
@@ -114,13 +139,17 @@
             e.preventDefault();
             
             const action=form.getAttribute('action');
+            console.dir(action);
             const method=form.getAttribute('method');
             let formData='';
-            let loggedIn=false;
+            var loggedIn=false;
+            console.dir(loggedIn);
             
             if(action==='/logIn'){
-                const user=form.querySelector('text');
-                const pass=form.querySelector('pass');
+                const user=form.querySelector('#userField').value;
+                const pass=form.querySelector('#passField').value;
+                console.dir(user);
+                console.dir(pass);
                 formData=`user=${user}&pass=${pass}`;
             }
             
@@ -129,7 +158,7 @@
                 const user=document.querySelector('#userField').value;
                 const titleField=form.querySelector('#titleField');
                 const contentField=form.querySelector('#noteField');
-                formData=`user=${user}&title=${titleField.value}&content=${noteField.value}`;
+                formData=`user=${user}&title=${titleField.value}&content=${contentField.value}`;
             }
             
             const xhr=new XMLHttpRequest();
@@ -160,6 +189,7 @@
             
             const newNote=(e)=>{
                 sendPost(e,noteForm);
+                document.getElementById('retrieve').style.visibility="visible";
                 document.getElementById('view').style.visibility="visible";
                 
                 const viewFormNoteField=viewForm.querySelector('#noteField');
@@ -177,10 +207,14 @@
                 noteFormTitleField.value='';
             };
             
-            const getNote=(e)=>requestUpdate(e,retrieveForm);
+            const getNote=(e)=>{
+                requestUpdate(e,retrieveForm);
+                document.getElementById('view').style.visibility="visible";
+            };
             
             const editNote=(e)=>sendPost(e,viewForm);
             
+            loginForm.addEventListener('submit', logIn);
             noteForm.addEventListener('submit', newNote);
             retrieveForm.addEventListener('submit', getNote);
             viewForm.addEventListener('submit',editNote);

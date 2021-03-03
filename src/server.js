@@ -26,6 +26,8 @@ const urlStruct = {
 
 // handle a post request
 const handlePost = (request, response, parsedUrl) => {
+  console.dir(parsedUrl.pathname);
+  console.dir(request.method);
   if (urlStruct[request.method][parsedUrl.pathname]) {
     const body = [];
 
