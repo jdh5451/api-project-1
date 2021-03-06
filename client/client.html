@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <title>A Notes App</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="/style.css">
   
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
@@ -54,10 +56,10 @@
                         break;
                     case 401:
                         content.innerHTML='<b>Error 401: Unauthorized</b>';
-                        document.getElementById('login').style.visibility="visible";
-                        document.getElementById('create').style.visibility="hidden";
-                        document.getElementById('retrieve').style.visibility="hidden";
-                        document.getElementById('view').style.visibility="hidden";
+                        document.getElementById('login').style.display="flex";
+                        document.getElementById('create').style.display="none";
+                        document.getElementById('retrieve').style.display="none";
+                        document.getElementById('view').style.display="none";
                         document.getElementById('userField').value='';
                         document.getElementById('passField').value='';
                         break;
@@ -74,14 +76,14 @@
                 switch(xhr.status){
                     case 200:
                         content.innerHTML='<b>You have successfully logged in to your account!</b>';
-                        document.getElementById('login').style.visibility="hidden";
-                        document.getElementById('create').style.visibility="visible";
-                        document.getElementById('retrieve').style.visibility="visible";
+                        document.getElementById('login').style.display="none";
+                        document.getElementById('create').style.display="flex";
+                        document.getElementById('retrieve').style.display="flex";
                         break;
                     case 201:
                         content.innerHTML='<b>You have successfully created your account!</b>';
-                        document.getElementById('login').style.visibility="hidden";
-                        document.getElementById('create').style.visibility="visible";
+                        document.getElementById('login').style.display="none";
+                        document.getElementById('create').style.display="flex";
                         break;
                     case 204:
                         content.innerHTML='<b>Your note was successfully updated!</b>';
@@ -181,16 +183,16 @@
             const retrieveForm=document.querySelector('#retrieveForm');
             const viewForm=document.querySelector('#viewForm');
             
-            document.getElementById('create').style.visibility="hidden";
-            document.getElementById('retrieve').style.visibility="hidden";
-            document.getElementById('view').style.visibility="hidden";
+            document.getElementById('create').style.display="none";
+            document.getElementById('retrieve').style.display="none";
+            document.getElementById('view').style.display="none";
             
             const logIn=(e)=>sendPost(e,loginForm);
             
             const newNote=(e)=>{
                 sendPost(e,noteForm);
-                document.getElementById('retrieve').style.visibility="visible";
-                document.getElementById('view').style.visibility="visible";
+                document.getElementById('retrieve').style.display="flex";
+                document.getElementById('view').style.display="flex";
                 
                 const viewFormNoteField=viewForm.querySelector('#noteField');
                 const noteFormNoteField=noteForm.querySelector('#noteField');
@@ -209,7 +211,7 @@
             
             const getNote=(e)=>{
                 requestUpdate(e,retrieveForm);
-                document.getElementById('view').style.visibility="visible";
+                document.getElementById('view').style.display="flex";
             };
             
             const editNote=(e)=>sendPost(e,viewForm);
@@ -232,14 +234,14 @@
         <section id="content"></section>
         <div id="login">
             <h3>Please Log In!</h3>
-            <p>If you haven't logged in before, logging in will create a new account.</p>
-            <p>Please make sure to use a password that you don't use elsewhere!</p>
+            <p>If you haven't logged in before, logging in will create a new account.
+                <br>Please make sure to use a password that you don't use elsewhere!</p>
             <form id="loginForm" action="/logIn" method="post">
                 <label for="username">Username:</label>
                 <input id="userField" type="text" name="username"/>
                 <label for="password">Password:</label>
                 <input id="passField" name="password" type='password'/>
-                <input type="submit" value="login" />
+                <input type="submit" value="Log In!" />
             </form>
         </div>
         <div id="create">
@@ -248,27 +250,27 @@
             <form id="noteForm" action="/addNote" method="post">
                 <label for="title">Give it a Title!</label>
                 <input id="titleField" type="text" name="title"/>
-                <label for="noteField">Write a Note!</label>
                 <textarea id="noteField" name="noteField" wrap="soft" placeholder="Write your note here." rows="10" cols="50"></textarea>
-                <input type="submit" value="Save Note" />
+                <input type="submit" value="Save Note!" />
             </form>
         </div>
         
         <div id="retrieve">
             <h3>Retrieve a Note!</h3>
             <form id="retrieveForm" action="/getNote" method="get">
-                <label for="name">Note Name?</label>
+                <label for="name">Title:</label>
                 <select id="noteSelect" name="name"></select>
-                <input type="submit" value="Retrieve Note" />
+                <input type="submit" value="Retrieve Note!" />
             </form>
         </div>
         
         <div id="view">
             <h3>View or Edit a Note!</h3>
             <form id="viewForm" action="/addNote" method="post">
+                <label for="title">Title:</label>
                 <input id="titleField" type="text" readonly/>
                 <textarea id="noteField" name="noteField" wrap="soft" rows="10" cols="50">There's no note here!</textarea>
-                <input type="submit" value="Save Changes" />
+                <input type="submit" value="Save Note!" />
             </form>
         </div>
         
