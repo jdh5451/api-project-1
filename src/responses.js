@@ -67,15 +67,19 @@ const getNote = (request, response, params) => {
     id: 'notFound',
   };
 
+  // this is essentially a failsafe if the user isn't logged in
   if (!params.user) {
     responseJSON.message = 'You are not logged in. Please log in again.';
     responseJSON.id = 'unauthorized';
     return respondJSON(request, response, 401, responseJSON);
   }
 
+  // if the note exists, send it
   if (users[params.user].notes[params.title]) {
     return respondJSON(request, response, 200, users[params.user].notes[params.title]);
   }
+
+  // nothing was found? return
   return respondJSON(request, response, 404, responseJSON);
 };
 
@@ -123,16 +127,21 @@ const logIn = (request, response, body) => {
     return respondJSON(request, response, responseCode, responseJSON);
   }
 
+  // an old account was found, but it has no notes.
   if (!users[body.user].notes) {
     users[body.user].notes = {};
     responseJSON.message = `Welcome back, ${users[body.user].name}! Write your first note now!`;
     return respondJSON(request, response, responseCode, responseJSON);
   }
+
+  // second verse, same as the first. i'd make this a second condition for the first if,
+  // but i don't want to break anything
   if (Object.keys(users[body.user].notes).length === 0) {
     responseJSON.message = `Welcome back, ${users[body.user].name}! Write your first note now!`;
     return respondJSON(request, response, responseCode, responseJSON);
   }
 
+  // this account exists, send it back
   responseJSON.message = `Welcome back, ${users[body.user].name}!`;
   responseJSON.titles = Object.keys(users[body.user].notes);
   return respondJSON(request, response, responseCode, responseJSON);

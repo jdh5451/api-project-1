@@ -1,3 +1,4 @@
+// same as always
 const http = require('http');
 const url = require('url');
 const query = require('querystring');
@@ -6,6 +7,7 @@ const htmlHandler = require('./htmlResponses.js');
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
+// struct for handling different request headers
 const urlStruct = {
   GET: {
     '/': htmlHandler.getIndex,
@@ -50,6 +52,7 @@ const handlePost = (request, response, parsedUrl) => {
   }
 };
 
+// handle a get or head request
 const handleRequest = (request, response, parsedUrl) => {
   console.dir(parsedUrl.pathname);
   console.dir(request.method);
@@ -62,6 +65,7 @@ const handleRequest = (request, response, parsedUrl) => {
   }
 };
 
+// handle any request
 const onRequest = (request, response) => {
   const parsedUrl = url.parse(request.url);
 

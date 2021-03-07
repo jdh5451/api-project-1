@@ -1,3 +1,4 @@
+// this is the same html responses file that we've used for the past few assignments, essentially.
 const fs = require('fs');
 
 const index = fs.readFileSync(`${__dirname}/../client/client.html`);

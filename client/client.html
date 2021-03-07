@@ -9,14 +9,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
     <script type="text/babel">
         const parseJSON=(xhr,content,viewForm)=>{
+            //only parse if JSON
             if(xhr.response&&xhr.getResponseHeader('Content-Type')==='application/json'){
                 const obj=JSON.parse(xhr.response);
                 console.dir(obj);
                 
+                //if there's a message, display it
                 if(obj.message){
                     content.innerHTML+=`<p>${obj.message}</p>`;
+                    //then check to see if the login brought you to an existing account
                     if(obj.titles){
-                        {
+                        
                             if(!(obj.titles.length===0)){
                                 for(let i=0;i<obj.titles.length;i++){
                                     let option=document.createElement('option');
@@ -25,10 +28,10 @@
                                     document.getElementById('noteSelect').appendChild(option);
                                 }
                             }
-                        }
+                        
                         
                     }
-                } else if(obj.title&&obj.content){
+                } else if(obj.title&&obj.content){ //this is for a retrieved note.
                     viewForm.querySelector('#titleField').value=obj.title;
                     viewForm.querySelector('#noteField').value=obj.content;
                 } 
@@ -40,6 +43,9 @@
             const viewForm=document.querySelector('#viewForm');
             const retrieveForm=document.querySelector('#retrieveForm');
             
+            //we have 2 switch statements based on if the user is logged in
+            //the main thing this one does aside from display status messages
+            //is log you out if you're somehow not logged in and try to get/post data
             if(loggedIn){
                 switch(xhr.status){
                     case 200:
@@ -72,18 +78,22 @@
                 }
             }
             
+            //this one logs you in
             else{
                 switch(xhr.status){
                     case 200:
                         content.innerHTML='<b>You have successfully logged in to your account!</b>';
                         document.getElementById('login').style.display="none";
-                        document.getElementById('create').style.display="flex";
-                        document.getElementById('retrieve').style.display="flex";
+                        document.getElementById('create').style.display="block";
+                        document.getElementById('create').style.float="left";
+                        document.getElementById('retrieve').style.display="block";
+                        document.getElementById('retrieve').style.float="right";
                         break;
                     case 201:
                         content.innerHTML='<b>You have successfully created your account!</b>';
                         document.getElementById('login').style.display="none";
-                        document.getElementById('create').style.display="flex";
+                        document.getElementById('create').style.display="block";
+                        document.getElementById('create').style.float="none";
                         break;
                     case 204:
                         content.innerHTML='<b>Your note was successfully updated!</b>';
@@ -106,10 +116,11 @@
             }
             
 
-            
+            //parse the JSON for a message
             parseJSON(xhr,content,viewForm);   
         };
-
+        
+        //send a get request
         const requestUpdate = (e, retrieveForm) => {
             let url = retrieveForm.getAttribute('action');
             const method = retrieveForm.getAttribute('method');
@@ -140,6 +151,7 @@
             //we want to prevent the page from sending on its own
             e.preventDefault();
             
+            //set up some references
             const action=form.getAttribute('action');
             console.dir(action);
             const method=form.getAttribute('method');
@@ -147,6 +159,7 @@
             var loggedIn=false;
             console.dir(loggedIn);
             
+            //generate form data based on action taken
             if(action==='/logIn'){
                 const user=form.querySelector('#userField').value;
                 const pass=form.querySelector('#passField').value;
@@ -163,6 +176,7 @@
                 formData=`user=${user}&title=${titleField.value}&content=${contentField.value}`;
             }
             
+            //send the post request
             const xhr=new XMLHttpRequest();
             xhr.open(method, action);
             
@@ -176,46 +190,62 @@
             
             return false;
         };
-
+        
+        //init
         const init = () => {
+            //get some references
             const loginForm=document.querySelector('#loginForm');
             const noteForm=document.querySelector('#noteForm');
             const retrieveForm=document.querySelector('#retrieveForm');
             const viewForm=document.querySelector('#viewForm');
             
+            //set initial visibility
             document.getElementById('create').style.display="none";
             document.getElementById('retrieve').style.display="none";
             document.getElementById('view').style.display="none";
             
+            //declare the event listener functions
             const logIn=(e)=>sendPost(e,loginForm);
             
             const newNote=(e)=>{
                 sendPost(e,noteForm);
-                document.getElementById('retrieve').style.display="flex";
-                document.getElementById('view').style.display="flex";
+                
                 
                 const viewFormNoteField=viewForm.querySelector('#noteField');
                 const noteFormNoteField=noteForm.querySelector('#noteField');
                 const viewFormTitleField=viewForm.querySelector('#titleField');
                 const noteFormTitleField=noteForm.querySelector('#titleField');
                 
-                viewFormNoteField.value=noteFormNoteField.value;
-                viewFormTitleField.value=noteFormTitleField.value;
-                let option=document.createElement('option');
-                option.value=`${noteFormTitleField.value}`;
-                option.text=`${noteFormTitleField.value}`;
-                document.getElementById('noteSelect').appendChild(option);
-                noteFormNoteField.value='';
-                noteFormTitleField.value='';
+                //add the data from the newly made note to the view note field
+                //only if there is data
+                
+                
+                if(noteFormNoteField.value&&noteFormTitleField.value){
+                    document.getElementById('retrieve').style.display="block";
+                    document.getElementById('view').style.display="block";
+                    document.getElementById('create').style.float="left";
+                    viewFormNoteField.value=noteFormNoteField.value;
+                    viewFormTitleField.value=noteFormTitleField.value;
+                    let option=document.createElement('option');
+                    option.value=`${noteFormTitleField.value}`;
+                    option.text=`${noteFormTitleField.value}`;
+                    document.getElementById('noteSelect').appendChild(option);
+                    noteFormNoteField.value='';
+                    noteFormTitleField.value='';
+                }
+                
             };
             
             const getNote=(e)=>{
                 requestUpdate(e,retrieveForm);
-                document.getElementById('view').style.display="flex";
+                document.getElementById('view').style.display="block";
+                document.getElementById('create').style.float="left";
+                document.getElementById('retrieve').style.float="left";
             };
             
             const editNote=(e)=>sendPost(e,viewForm);
             
+            //add event listeners
             loginForm.addEventListener('submit', logIn);
             noteForm.addEventListener('submit', newNote);
             retrieveForm.addEventListener('submit', getNote);
@@ -244,34 +274,36 @@
                 <input type="submit" value="Log In!" />
             </form>
         </div>
-        <div id="create">
-            <h3>Make a New Note!</h3>
-            <p>(We don't recommend putting super important, secret, personal data in these notes right now.)</p>
-            <form id="noteForm" action="/addNote" method="post">
-                <label for="title">Give it a Title!</label>
-                <input id="titleField" type="text" name="title"/>
-                <textarea id="noteField" name="noteField" wrap="soft" placeholder="Write your note here." rows="10" cols="50"></textarea>
-                <input type="submit" value="Save Note!" />
-            </form>
-        </div>
         
-        <div id="retrieve">
-            <h3>Retrieve a Note!</h3>
-            <form id="retrieveForm" action="/getNote" method="get">
-                <label for="name">Title:</label>
-                <select id="noteSelect" name="name"></select>
-                <input type="submit" value="Retrieve Note!" />
-            </form>
-        </div>
+        <div id="forms">
+            <div id="create">
+                <h3>Make a New Note!</h3>
+                <form id="noteForm" class="nForm" action="/addNote" method="post">
+                    <label for="title">Give it a Title!</label>
+                    <input id="titleField" type="text" name="title"/>
+                    <textarea id="noteField" name="noteField" wrap="soft" placeholder="Write your note here."></textarea>
+                    <input type="submit" value="Save Note!" />
+                </form>
+            </div>
         
-        <div id="view">
-            <h3>View or Edit a Note!</h3>
-            <form id="viewForm" action="/addNote" method="post">
-                <label for="title">Title:</label>
-                <input id="titleField" type="text" readonly/>
-                <textarea id="noteField" name="noteField" wrap="soft" rows="10" cols="50">There's no note here!</textarea>
-                <input type="submit" value="Save Note!" />
-            </form>
+            <div id="retrieve">
+                <h3>Retrieve a Note!</h3>
+                <form id="retrieveForm" class="rForm" action="/getNote" method="get">
+                    <label for="name">Title:</label>
+                    <select id="noteSelect" name="name"></select>
+                    <input type="submit" value="Retrieve Note!" />
+                </form>
+            </div>
+        
+            <div id="view">
+                <h3>View or Edit a Note!</h3>
+                <form id="viewForm" class="nForm" action="/addNote" method="post">
+                    <label for="title">Title:</label>
+                    <input id="titleField" type="text" readonly/>
+                    <textarea id="noteField" name="noteField" wrap="soft" >There's no note here!</textarea>
+                    <input type="submit" value="Save Note!" />
+                </form>
+            </div>
         </div>
         
     </div>
